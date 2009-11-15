@@ -29,10 +29,10 @@ class ComboLoader {
 	protected $_options = array(
 		'normalize_base'		=> array('components'),
 		'normalize_full_length'	=> 4,
-		'js_directory_name'		=> 'scripts',
-		'css_directory_name'	=> 'style',
-		'assets_path' 			=> 'assets',
-		'cache_path' 			=> 'cache',
+		'js_directory_name'		=> 'Scripts',
+		'css_directory_name'	=> 'Styles',
+		'assets_path' 			=> 'Assets',
+		'cache_path' 			=> '/tmp',
 		'yui_compressor_path'	=> false,
 		'version_pattern' 		=> '[0-9]{2}w[0-9]{2}',
 		'js_content_type'		=> 'application/x-javascript',
@@ -43,7 +43,7 @@ class ComboLoader {
 		'default_filename_type' => 'min',
 		'charset'				=> 'UTF-8',
 		'minify'				=> true,
-		'js_minifier'			=> 'closure',
+		'js_minifier'			=> 'yui',
 		'closure_params'		=> array('output_format' => 'text', 'output_info' => 'compiled_code', 'compilation_level' => 'ADVANCED_OPTIMIZATIONS'),
 		'closure_path'			=> 'closure-compiler.appspot.com/compile'
 	);
