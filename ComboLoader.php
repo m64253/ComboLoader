@@ -11,8 +11,6 @@ class ComboLoader_Exception_Filename extends ComboLoader_Exception { }
 class ComboLoader_Exception_Build extends ComboLoader_Exception { }
 class ComboLoader_Exception_Content extends ComboLoader_Exception { }
 
-if (!function_exists('prePrint')) { function prePrint($data, $title = null, $return = false) { $out = array(); if (!empty($title)) { $out[] = '<h3>' . $title . '</h3>'; } $out[] = '<pre>'; $out[] = print_r($data, true); $out[] = '</pre>'. "\n"; if ($return === true) { return implode("\n", $out); } else { echo implode("\n", $out); } } }
-
 set_exception_handler('ComboLoader::exceptionHandler');
 
 /**

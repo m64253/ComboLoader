@@ -1,6 +1,5 @@
 RewriteEngine on
-RewriteRule ^Docs(.*) Docs$1
-
+RewriteRule . index.php
 
 <IfModule mod_expires.c>
 	ExpiresActive On
