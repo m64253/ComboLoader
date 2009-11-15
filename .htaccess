@@ -1,0 +1,9 @@
+RewriteEngine on
+RewriteRule ^Docs(.*) Docs$1
+
+
+<IfModule mod_expires.c>
+	ExpiresActive On
+	ExpiresByType text/javascript "access plus 1 years"
+	ExpiresByType application/x-javascript "access plus 1 years"
+</IfModule>
