@@ -21,31 +21,31 @@ set_exception_handler('ComboLoader::exceptionHandler');
  * @author Mikael Abrahamsson
  */
 class ComboLoader {
-	/**
+	/** 
 	 * Options
 	 *
 	 * @var array
 	 */
 	protected $_options = array(
-		'normalize_base'		=> array('components'),
-		'normalize_full_length'	=> 4,
-		'js_directory_name'		=> 'Scripts',
-		'css_directory_name'	=> 'Styles',
-		'assets_path' 			=> 'Assets',
-		'cache_path' 			=> '/tmp',
-		'yui_compressor_path'	=> false,
-		'version_pattern' 		=> '[0-9]{2}w[0-9]{2}',
-		'js_content_type'		=> 'application/x-javascript',
-		'css_content_type'		=> 'text/css',
-		'self_path'				=> 'combo',
-		'self_file'				=> 'Combo.php',
-		'use_cache'				=> false,
-		'default_filename_type' => 'min',
-		'charset'				=> 'UTF-8',
-		'minify'				=> true,
-		'js_minifier'			=> 'yui',
-		'closure_params'		=> array('output_format' => 'text', 'output_info' => 'compiled_code', 'compilation_level' => 'ADVANCED_OPTIMIZATIONS'),
-		'closure_path'			=> 'closure-compiler.appspot.com/compile'
+		'normalize_base'			=> array('components'),
+		'normalize_full_length'		=> 4,
+		'js_directory_name'			=> 'Scripts',
+		'css_directory_name'		=> 'Styles',
+		'assets_path'	 			=> 'Assets',
+		'cache_path' 				=> '/tmp',
+		'yui_compressor_path'		=> false,
+		'version_pattern' 			=> '[0-9]+',
+		'js_content_type'			=> 'application/x-javascript',
+		'css_content_type'			=> 'text/css',
+		'self_path'					=> 'combo',
+		'self_file'					=> 'Combo.php',
+		'use_cache'					=> false,
+		'default_filename_type' 	=> 'min',
+		'charset'					=> 'UTF-8',
+		'minify'					=> true,
+		'js_minifier'				=> 'yui',
+		'closure_params'			=> array('output_format' => 'text', 'output_info' => 'compiled_code', 'compilation_level' => 'ADVANCED_OPTIMIZATIONS'),
+		'closure_path'				=> 'closure-compiler.appspot.com/compile'
 	);
 	
 	/**
@@ -94,6 +94,7 @@ class ComboLoader {
 		500 => 'HTTP/1.0 500 Internal Error'
 	);
 	
+	protected $_fullpathSkeleton = null;
 	
 	/**
 	 * Class constructor
@@ -137,7 +138,7 @@ class ComboLoader {
 	/******************************************************************************************************************************************************************/
 	
 	/**
-	 * Checks if a given option name exists and is of the corrent type
+	 * Checks if a given option name exists and is of the current type
 	 *
 	 * @param string $name The name of the option a thats is requested
 	 * @return string
