@@ -94,6 +94,13 @@ class ComboLoader {
 		500 => 'HTTP/1.0 500 Internal Error'
 	);
 	
+	/**
+	 * Set to true only return the calculated file paths
+	 *
+	 * @var boolean
+	 */
+	static public $dryRun = false;
+	
 	protected $_fullpathSkeleton = null;
 	
 	/**
@@ -457,8 +464,6 @@ class ComboLoader {
 		header('Content-Type: ' . $contentType);
 		header('Content-Length: ' . $contentLength);
 		echo $content;
-		
-		//echo "Request Sent! \n" . $contentType . "\n$contentLength\n\n";
 	}
 	
 	/**
@@ -497,7 +502,7 @@ class ComboLoader {
 		
 		$paths = preg_split('/[\/]/', trim(preg_replace('/^[\/]+/', '', preg_replace('/[\&\?]?(' . $version . ')?/', '', $path))));
 		
-		// Is full path		
+		// Is full path
 		if (count($paths) === $normalizeFullLength) {
 			$result = array(implode(DIRECTORY_SEPARATOR, $paths));
 		
@@ -519,22 +524,26 @@ class ComboLoader {
 			$filename 	= $normalizedPath[$index];
 			$type 		= $this->getType($filename);
 			
+			array_unshift($normalizedPath, $this->getOption('assets_path'), $version);
+			
 			// Missing base
 			if ($length === $normalizeFullLength) {
+				echo 'Missing base' . "\n";
+				
 				$result = array(implode(DIRECTORY_SEPARATOR, $normalizedPath));
 			
 			// Missing Type Dir
 			} elseif ($length === $missingTypeDirLength) {
+				echo 'Missing Type Dir' . "\n";
 				
 				$normalizedPath[$index] = $this->getOption($type . '_directory_name');
 				$normalizedPath[] = $filename;
 				
 				$result = array(implode(DIRECTORY_SEPARATOR, $normalizedPath));
 			
-			// All type files		
+			// All type files
 			} elseif ($length === $allFilesLength) {
-				
-				$dir = 	$this->getOption('assets_path') . DIRECTORY_SEPARATOR . $version . DIRECTORY_SEPARATOR . preg_replace('/\.' . $type . '$/i', '', implode(DIRECTORY_SEPARATOR, $normalizedPath)) . DIRECTORY_SEPARATOR . $this->getOption($type . '_directory_name');
+				$dir =  preg_replace('/\.' . $type . '$/i', '', implode(DIRECTORY_SEPARATOR, $normalizedPath)) . DIRECTORY_SEPARATOR . $this->getOption($type . '_directory_name');
 				
 				$files = $this->getFilesInDir($dir, $type);
 				
@@ -666,7 +675,7 @@ class ComboLoader {
 	}
 	
 	/**
-	 * Handle in comming request
+	 * Handle in coming request
 	 *
 	 * @param string $requestParams 
 	 * @return void
@@ -678,9 +687,13 @@ class ComboLoader {
 		
 		$this->setCacheKey($requestParams);
 		
-		if (!$this->getCache()) {
+		if (!$this->getCache() || self::$dryRun) {
 						
 			$files = $this->parseRequest($requestParams);
+			
+			if (self::$dryRun) {
+				return $files;
+			}
 			
 			$this->build($files);
 		}
