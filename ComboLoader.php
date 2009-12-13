@@ -13,6 +13,9 @@ class ComboLoader_Exception_Content extends ComboLoader_Exception { }
 
 set_exception_handler('ComboLoader::exceptionHandler');
 
+define("MINIFIER_YUI", "YUI");
+define("MINIFIER_CLOSURE", "Closure");
+
 /**
  * Combo Loader
  * 	A simple class for combining, serving, minify/compressing static files such as javascript and stylesheets.
@@ -43,9 +46,10 @@ class ComboLoader {
 		'default_filename_type' 	=> 'min',
 		'charset'					=> 'UTF-8',
 		'minify'					=> true,
-		'js_minifier'				=> 'yui',
+		'js_minifier'				=> MINIFIER_YUI,
 		'closure_params'			=> array('output_format' => 'text', 'output_info' => 'compiled_code', 'compilation_level' => 'ADVANCED_OPTIMIZATIONS'),
-		'closure_path'				=> 'closure-compiler.appspot.com/compile'
+		'closure_path'				=> 'closure-compiler.appspot.com/compile',
+		'debug_header'				=> true
 	);
 	
 	/**
@@ -81,6 +85,11 @@ class ComboLoader {
 	 * @var integer
 	 */
 	protected $_fullLength;
+	
+	/**
+	 * @var integer
+	 */
+	protected $_timer;
 	
 	/**
 	 * Header
@@ -140,6 +149,12 @@ class ComboLoader {
 	}
 	
 	/******************************************************************************************************************************************************************/
+	
+	protected function startTimer() {
+		if (!$this->_timer) {
+			$this->_timer = microtime(true);
+		}
+	}
 	
 	/**
 	 * Checks if a given option name exists and is of the current type
@@ -442,7 +457,7 @@ class ComboLoader {
 			$file = $this->normalize($param);
 			$files = array_merge($files, $file);
 		}
-		
+				
 		return $files;
 	}
 	
@@ -460,6 +475,43 @@ class ComboLoader {
 		
 		header('Content-Type: ' . $contentType);
 		header('Content-Length: ' . $contentLength);
+		
+		// Debug header
+		if ($this->getOption('debug_header') && !$this->getOption('use_cache')) {
+			$assetsDir = $this->getOption('assets_path');
+			
+			$files = preg_filter('/^[\\' . DIRECTORY_SEPARATOR . ']?' . $assetsDir . '[\\' . DIRECTORY_SEPARATOR . ']?/', '', $this->_files);
+						
+			$rawContentLength = mb_strlen(file_get_contents($this->getContent('raw')), $this->getOption('charset'));
+			
+			$minifier = $this->getOption('js_minifier');
+			
+			$header = array('/**');
+			$header[] = 'Params:         ' . $this->_requestParams;
+			$header[] = 'Minifier:       ' . $minifier;
+			
+			if ($minifier === MINIFIER_CLOSURE) {
+				$closureParams = $this->getOption('closure_params');
+				$header[] = 'Closure params: ' . key($closureParams) . ' = ' . current($closureParams);
+				array_shift($closureParams);
+				foreach($closureParams as $k =>$v) {
+					$header[] = '                ' . $k . ' = ' . $v;
+				}
+			}
+			
+			$header[] = 'Raw size:       ' . round($rawContentLength / 1024, 1) . ' KB';
+			$header[] = 'Minified size:  ' . round($contentLength / 1024, 1) . ' KB';
+			$header[] = 'Savings:        ' . round(($contentLength / $rawContentLength) * 100, 3) . '%';
+			$header[] = 'Time:           ' . round(microtime(true) - $this->_timer, 3) . ' ms';
+			$header[] = 'Files:          ' . array_shift($files);
+			
+			foreach($files as $file) {
+				$header[] = '                ' . $file;
+			}
+						
+			echo implode("\n * ", $header) . "\n */\n";
+		}
+		
 		echo $content;
 	}
 	
@@ -636,25 +688,23 @@ class ComboLoader {
 	public function concat(array $files) {
 		// Minify command
 		$cmd = 'cat ' . implode(' ', $files);
-
+		
 		// Escape Command
 		$cmd = escapeshellcmd($cmd);
 				
 		// Do the thing
 		exec($cmd, $output, $code);
-				
+						
 		// Did it go well?
 		if (is_numeric($code) && $code !== 0) {
 			throw new ComboLoader_Exception_Build('Concat: Error code "' . $code . '"', 500);
 		}
 		
-		array_unshift($output, '*/');
-		array_unshift($output, 'Request Time: ' . microtime(true));
-		array_unshift($output, 'Request Params: ' . $this->_requestParams);
-		array_unshift($output, '/*!');
+		$this->_files = $files;
 		
+		// Get raw content
 		$raw = implode("\n", $output);
-				
+		
 		// Set Content Raw
 		$this->setContent($raw, 'raw');
 	}
@@ -668,11 +718,11 @@ class ComboLoader {
 	 */
 	public function minify($content) {
 		
-		$minifier 	= strtolower($this->getOption('js_minifier'));
+		$minifier 	= $this->getOption('js_minifier');
 		$type 		= $this->getType();
 		
 		// Minify JavaScript with Google Closure
-		if ($type === 'js' && $minifier === 'closure') {
+		if ($type === 'js' && $minifier === MINIFIER_CLOSURE) {
 			
 			// Get closure params
 			$params = $this->getOption('closure_params');
@@ -701,7 +751,7 @@ class ComboLoader {
 			curl_close($curl);
 						
 		// Minify JavaScript and CSS with The YUI Compressor
-		} elseif ($this->getType() === 'css' || $minifier === 'yui') {
+		} elseif ($this->getType() === 'css' || $minifier === MINIFIER_YUI) {
 		
 			// Minify command
 			$cmd = 'java -jar ' . $this->getOption('yui_compressor_path') . ' --charset ' . $this->getOption('charset') . ' --type ' . $type . ' ' . $content;
@@ -736,6 +786,8 @@ class ComboLoader {
 	 */
 	public function handle($requestParams) {
 		
+		$this->startTimer();
+		
 		$this->setType($requestParams);
 		
 		$this->setCacheKey($requestParams);
@@ -762,6 +814,8 @@ class ComboLoader {
 	 */
 	public function auto() {
 		
+		$this->startTimer();
+		
 		if (isset($_SERVER['REQUEST_URI'])) {
 			$requestParams = $_SERVER['REQUEST_URI'];
 		} elseif (isset($_SERVER['REDIRECT_URL'])) {
@@ -774,6 +828,12 @@ class ComboLoader {
 			}
 		}
 		
+		$localPath = preg_split('/[\\' . DIRECTORY_SEPARATOR . ']/', dirname(__FILE__));
+		
+		foreach($localPath as $i => $path) {
+			$requestParams = preg_replace('/^' . $path . '[\\' . DIRECTORY_SEPARATOR . ']?/', '', $requestParams);
+		}
+				
 		$this->handle($requestParams);
 	}
 }
