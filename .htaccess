@@ -1,11 +1,8 @@
-RewriteEngine On
-RewriteCond %{REQUEST_FILENAME} -s [OR]
-RewriteCond %{REQUEST_FILENAME} -l [OR]
-RewriteCond %{REQUEST_FILENAME} -d
-RewriteRule ^.*$ - [NC,L]
-RewriteRule ^.*$ combo.php [NC,L]
 <IfModule mod_expires.c>
 	ExpiresActive On
-	ExpiresByType text/javascript "access plus 1 years"
-	ExpiresByType application/x-javascript "access plus 1 years"
+	ExpiresByType text/css "access plus 10 years"
+	ExpiresByType text/javascript "access plus 10 years"
+	ExpiresByType application/x-javascript "access plus 10 years"
 </IfModule>
+
+RewriteRule ^[0-9]{2}w[0-9]{2}/(.*)$ assets/$1 [L]

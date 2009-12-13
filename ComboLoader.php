@@ -460,7 +460,7 @@ class ComboLoader {
 				
 		return $files;
 	}
-	
+		
 	/**
 	 * Send Request
 	 *
@@ -472,10 +472,8 @@ class ComboLoader {
 		$content		= $this->getContent();
 		$contentType 	= $this->getContentType();
 		$contentLength 	= mb_strlen($content, $this->getOption('charset'));
-		
-		header('Content-Type: ' . $contentType);
-		header('Content-Length: ' . $contentLength);
-		
+		$headers 		= ""; 
+			
 		// Debug header
 		if ($this->getOption('debug_header') && !$this->getOption('use_cache')) {
 			$assetsDir = $this->getOption('assets_path');
@@ -488,30 +486,48 @@ class ComboLoader {
 			
 			$header = array('/**');
 			$header[] = 'Params:         ' . $this->_requestParams;
-			$header[] = 'Minifier:       ' . $minifier;
+			$header[] = '';
 			
-			if ($minifier === MINIFIER_CLOSURE) {
-				$closureParams = $this->getOption('closure_params');
-				$header[] = 'Closure params: ' . key($closureParams) . ' = ' . current($closureParams);
-				array_shift($closureParams);
-				foreach($closureParams as $k =>$v) {
-					$header[] = '                ' . $k . ' = ' . $v;
+			if ($this->getOption('minify')) {
+				$header[] = 'Minifier:       ' . $minifier;
+				if ($minifier === MINIFIER_CLOSURE) {
+					$header[] = 'Closure path:   ' . $this->getOption('closure_path');
+					$closureParams = $this->getOption('closure_params');
+					$header[] = 'Closure params: ' . key($closureParams) . ' = ' . current($closureParams);
+					array_shift($closureParams);
+					foreach($closureParams as $k =>$v) {
+						$header[] = '                ' . $k . ' = ' . $v;
+					}
+				} else {
+					$header[] = 'YUI path:       ' . $this->getOption('yui_compressor_path');
 				}
+				$header[] = '';
 			}
 			
 			$header[] = 'Raw size:       ' . round($rawContentLength / 1024, 1) . ' KB';
-			$header[] = 'Minified size:  ' . round($contentLength / 1024, 1) . ' KB';
-			$header[] = 'Savings:        ' . round(($contentLength / $rawContentLength) * 100, 3) . '%';
-			$header[] = 'Time:           ' . round(microtime(true) - $this->_timer, 3) . ' ms';
+			if ($this->getOption('minify')) {
+				$header[] = 'Minified size:  ' . round($contentLength / 1024, 1) . ' KB';
+				$header[] = 'Savings:        ' . round(($contentLength / $rawContentLength) * 100, 3) . '%';
+			}
+			$header[] = '';
+			
+			$header[] = 'Time:           ' . number_format(round(microtime(true) - $this->_timer, 3) * 1000, 0, '.', ' ') . ' ms';
+			$header[] = '';
+			
 			$header[] = 'Files:          ' . array_shift($files);
 			
 			foreach($files as $file) {
 				$header[] = '                ' . $file;
 			}
-						
-			echo implode("\n * ", $header) . "\n */\n";
+			
+			$headers = implode("\n * ", $header) . "\n */\n";
 		}
 		
+		
+		header('Content-Type: ' . $contentType);
+		header('Content-Length: ' . $contentLength + mb_strlen($headers));
+		
+		echo $headers;
 		echo $content;
 	}
 	
@@ -593,7 +609,7 @@ class ComboLoader {
 		}
 		
 		// Is full path
-		if (count($paths) === $normalizeFullLength) {
+		if (count($paths) >= $normalizeFullLength) {
 			$result = array(implode(DIRECTORY_SEPARATOR, $paths));
 		
 		// Missing some part in the path
