@@ -28,7 +28,7 @@ class ComboLoader {
 	 */
 	protected $_options = array(
 		'normalize_base'			=> array('components'),
-		'normalize_full_length'		=> 4,
+		'normalize_full_length'		=> 6,
 		'js_directory_name'			=> 'Scripts',
 		'css_directory_name'		=> 'Styles',
 		'assets_path'	 			=> 'Assets',
@@ -519,23 +519,27 @@ class ComboLoader {
 				}
 			}
 			
-			$length 	= count($normalizedPath);
-			$index 		= $length - 1;
-			$filename 	= $normalizedPath[$index];
-			$type 		= $this->getType($filename);
-			
+			// Push in the asset path and version path at the beginning
 			array_unshift($normalizedPath, $this->getOption('assets_path'), $version);
+			
+			// Get length
+			$length 	= count($normalizedPath);
+			
+			// Set index
+			$index 		= $length - 1;
+			
+			// Get filename
+			$filename 	= $normalizedPath[$index];
+			
+			// Get type
+			$type 		= $this->getType($filename);
 			
 			// Missing base
 			if ($length === $normalizeFullLength) {
-				echo 'Missing base' . "\n";
-				
 				$result = array(implode(DIRECTORY_SEPARATOR, $normalizedPath));
 			
 			// Missing Type Dir
 			} elseif ($length === $missingTypeDirLength) {
-				echo 'Missing Type Dir' . "\n";
-				
 				$normalizedPath[$index] = $this->getOption($type . '_directory_name');
 				$normalizedPath[] = $filename;
 				
@@ -543,8 +547,11 @@ class ComboLoader {
 			
 			// All type files
 			} elseif ($length === $allFilesLength) {
+				
+				// Get dir
 				$dir =  preg_replace('/\.' . $type . '$/i', '', implode(DIRECTORY_SEPARATOR, $normalizedPath)) . DIRECTORY_SEPARATOR . $this->getOption($type . '_directory_name');
 				
+				// Get files for directory
 				$files = $this->getFilesInDir($dir, $type);
 				
 				$result = preg_filter('/^(.*)$/', $dir . DIRECTORY_SEPARATOR . '$1', $files);
