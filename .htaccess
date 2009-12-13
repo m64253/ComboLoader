@@ -1,6 +1,9 @@
-RewriteEngine on
-RewriteRule . index.php
-
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} -s [OR]
+RewriteCond %{REQUEST_FILENAME} -l [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^.*$ - [NC,L]
+RewriteRule ^.*$ combo.php [NC,L]
 <IfModule mod_expires.c>
 	ExpiresActive On
 	ExpiresByType text/javascript "access plus 1 years"

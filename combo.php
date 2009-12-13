@@ -11,5 +11,4 @@ $comboLoader = new ComboLoader(array(
 	'js_minifier'			=> 'yui'
 ));
 
-// $comboLoader->auto();
-$comboLoader->handle('09w47/?self.js&common.js');
+$comboLoader->auto();

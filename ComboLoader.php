@@ -63,25 +63,24 @@ class ComboLoader {
 	protected $_type = null;
 	
 	/**
-	 * undocumented variable
-	 *
 	 * @var string
 	 */
 	protected $_filename = null;
 	
 	/**
-	 * undocumented variable
-	 *
 	 * @var string
 	 */
 	protected $_content;
 	
 	/**
-	 * undocumented variable
-	 *
 	 * @var string
 	 */
 	protected $_requestParams;
+	
+	/**
+	 * @var integer
+	 */
+	protected $_fullLength;
 	
 	/**
 	 * Header
@@ -100,9 +99,7 @@ class ComboLoader {
 	 * @var boolean
 	 */
 	static public $dryRun = false;
-	
-	protected $_fullpathSkeleton = null;
-	
+		
 	/**
 	 * Class constructor
 	 *
@@ -483,6 +480,38 @@ class ComboLoader {
 		throw new ComboLoader_Exception_DirectoryFiles('Unable to get file form directory "' . $directory . '"', 404);
 	}
 	
+	protected function getFullLength() {
+		if (!$this->_fullLength) {
+			
+			$this->_fullLength = count($this->getOption('normalize_base'));
+			
+			$assetsDir = $this->getOption('assets_path');
+			
+			$typeDir = $this->getOption($this->getType() . '_directory_name');
+			
+			// Using a assets dir
+			if (!empty($assetsDir)) {
+				$this->_fullLength++;
+			}
+			
+			// Version dir
+			$this->_fullLength++;
+			
+			// Using a type dir
+			if (!empty($typeDir)) {
+				$this->_fullLength++;
+			}
+			
+			// File dir
+			$this->_fullLength++;
+			
+			// File
+			$this->_fullLength++;
+		}
+		
+		return $this->_fullLength;
+	}
+	
 	/******************************************************************************************************************************************************************/
 	
 	/**
@@ -494,13 +523,22 @@ class ComboLoader {
 	 */
 	public function normalize($path) {
 		
-		$version				= $this->getVersion($path);
-		$normalizedPath 		= $this->getOption('normalize_base');
-		$normalizeFullLength	= $this->getOption('normalize_full_length');
-		$missingTypeDirLength 	= $normalizeFullLength - 1;
-		$allFilesLength 		= $normalizeFullLength - 2;
+		// Get Version
+		$version = $this->getVersion($path);
 		
+		// Complete path should be this length
+		$normalizeFullLength = $this->getFullLength();
+		
+		// Split out the path
 		$paths = preg_split('/[\/]/', trim(preg_replace('/^[\/]+/', '', preg_replace('/[\&\?]?(' . $version . ')?/', '', $path))));
+		
+		// Shift in the asset path and version path at the beginning
+		array_unshift($paths, $version);
+		
+		$assetsDir = $this->getOption('assets_path');
+		if (!empty($assetsDir)) {
+			array_unshift($paths, $assetsDir);
+		}
 		
 		// Is full path
 		if (count($paths) === $normalizeFullLength) {
@@ -508,31 +546,40 @@ class ComboLoader {
 		
 		// Missing some part in the path
 		} else {
-									
-			// With type dir
-			$allDirFiles = false;
-			$missingTypeDir = false;
 			
+			// Set missing type directory length
+			$missingTypeDirLength = $normalizeFullLength - 1;
+			
+			// Set load all files length
+			$allFilesLength = $normalizeFullLength - 2;
+			
+			$normalizedPath = array_merge($this->getOption('normalize_base'));
+			
+			// Shift in the asset path and version path at the beginning
+			array_unshift($normalizedPath, $version);
+			
+			if (!empty($assetsDir)) {
+				array_unshift($normalizedPath, $assetsDir);
+			}
+			
+			// Add path values
 			foreach ($paths as $i => $value) {
 				if (!isset($normalizedPath[$i]) || $normalizedPath[$i] !== $value) {
 					$normalizedPath[] = $value;
 				}
 			}
 			
-			// Push in the asset path and version path at the beginning
-			array_unshift($normalizedPath, $this->getOption('assets_path'), $version);
-			
 			// Get length
-			$length 	= count($normalizedPath);
+			$length = count($normalizedPath);
 			
 			// Set index
-			$index 		= $length - 1;
+			$index = $length - 1;
 			
 			// Get filename
-			$filename 	= $normalizedPath[$index];
+			$filename = $normalizedPath[$index];
 			
 			// Get type
-			$type 		= $this->getType($filename);
+			$type = $this->getType($filename);
 			
 			// Missing base
 			if ($length === $normalizeFullLength) {
@@ -547,7 +594,6 @@ class ComboLoader {
 			
 			// All type files
 			} elseif ($length === $allFilesLength) {
-				
 				// Get dir
 				$dir =  preg_replace('/\.' . $type . '$/i', '', implode(DIRECTORY_SEPARATOR, $normalizedPath)) . DIRECTORY_SEPARATOR . $this->getOption($type . '_directory_name');
 				
@@ -559,7 +605,7 @@ class ComboLoader {
 		}
 		
 		if (!isset($result) || empty($result)) {
-			throw new Combo_Exception_Normalize('Unable normalize path ("' . $path . '")', 500);
+			throw new ComboLoader_Exception_Normalize('Unable normalize path ("' . $path . '")', 500);
 		}
 		
 		return $result;

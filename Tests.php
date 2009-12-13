@@ -62,14 +62,16 @@ class ComboLoaderTest extends PHPUnit_Framework_TestCase {
 			0 => 'assets/09w47/components/self/scripts/new.js'
 		);
 		$this->assertEquals($e5, $t5, 'Handle case 5');
+		
+		$t6 = $this->comboLoader->handle('09w47/components/self/scripts/new.js&09w45/components/self/scripts/new.js');
+		$e6 = array(
+		    0 => 'assets/09w47/components/self/scripts/new.js',
+		    1 => 'assets/09w45/components/self/scripts/new.js'
+		);
+		$this->assertEquals($e6, $t6, 'Handle case 6');
     }
 }
-/*
+
 $t = new ComboLoaderTest();
 $t->setUp();
-$t->testHandle1();
-$t->testHandle2();
-$t->testHandle3();
-$t->testHandle4();
-$t->testHandle5();
-*/
+$t->testHandle();
